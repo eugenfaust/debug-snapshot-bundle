@@ -138,7 +138,7 @@ final class DoctrineSnapshotImporter
             throw new RuntimeException('Composite identifier is not supported.');
         }
 
-        $metadata->setFieldValue($entity, $identifier[0], $id);
+        $this->hydrator->hydrateScalars($entity, $metadata, [$identifier[0] => $id]);
     }
 
     private function assertSingleIdentifier(ClassMetadata $metadata): void

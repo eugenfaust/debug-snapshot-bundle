@@ -9,7 +9,7 @@
         }
     },
     "require": {
-        "php": "^8.2",
+        "php": "^8.3",
         "symfony/framework-bundle": "^7.1",
         "symfony/console": "^7.1",
         "symfony/options-resolver": "^7.1",

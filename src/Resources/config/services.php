@@ -8,7 +8,8 @@ return static function (ContainerConfigurator $configurator): void {
     $services = $configurator->services()
         ->defaults()
         ->autowire()
-        ->autoconfigure();
+        ->autoconfigure()
+        ->bind('$hydrateMap', '%debug_snapshot.hydrate%');
 
     $services->load('Evgenijfaustov\\DebugSnapshotBundle\\', '../../*')
         ->exclude([
