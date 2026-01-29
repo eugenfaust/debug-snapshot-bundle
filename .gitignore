@@ -1,0 +1,8 @@
+/snapshot-test-app/
+/tasks/
+/CODEX.md
+/vendor/
+/.phpunit.result.cache
+/.idea/
+/.vscode/
+.DS_Store
