@@ -9,6 +9,7 @@ use DateTimeImmutable;
 use DateTimeInterface;
 use InvalidArgumentException;
 use ReflectionClass;
+use ReflectionFunctionAbstract;
 use ReflectionMethod;
 
 final class ValueDenormalizer
@@ -46,12 +47,17 @@ final class ValueDenormalizer
 
         foreach (['fromString', 'create', 'from'] as $method) {
             if ($this->hasPublicStatic($targetClass, $method)) {
-                return $targetClass::$method($value);
+                $reflection = new ReflectionMethod($targetClass, $method);
+
+                return $targetClass::$method($this->coerceValueForMethod($reflection, $value));
             }
         }
 
         if ($this->hasPublicConstructor($targetClass)) {
-            return new $targetClass($value);
+            $reflection = new ReflectionClass($targetClass);
+            $constructor = $reflection->getConstructor();
+
+            return new $targetClass($this->coerceValueForMethod($constructor, $value));
         }
 
         throw new InvalidArgumentException(sprintf(
@@ -70,7 +76,9 @@ final class ValueDenormalizer
             ));
         }
 
-        return $class::$method($value);
+        $reflection = new ReflectionMethod($class, $method);
+
+        return $class::$method($this->coerceValueForMethod($reflection, $value));
     }
 
     private function hasPublicStatic(string $class, string $method): bool
@@ -96,5 +104,36 @@ final class ValueDenormalizer
         $parameters = $constructor->getParameters();
 
         return count($parameters) === 1;
+    }
+
+    private function coerceValueForMethod(?ReflectionFunctionAbstract $method, mixed $value): mixed
+    {
+        if ($method === null || $value === null) {
+            return $value;
+        }
+
+        $parameters = $method->getParameters();
+
+        if (count($parameters) !== 1) {
+            return $value;
+        }
+
+        $type = $parameters[0]->getType();
+
+        if ($type === null || !$type instanceof \ReflectionNamedType) {
+            return $value;
+        }
+
+        $typeName = $type->getName();
+
+        if (!is_a($typeName, DateTimeInterface::class, true)) {
+            return $value;
+        }
+
+        if ($value instanceof DateTimeInterface) {
+            return $value;
+        }
+
+        return new DateTimeImmutable((string) $value);
     }
 }
