@@ -6,6 +6,4 @@ namespace Evgenijfaustov\DebugSnapshotBundle;
 
 use Symfony\Component\HttpKernel\Bundle\Bundle;
 
-final class DebugSnapshotBundle extends Bundle
-{
-}
+final class DebugSnapshotBundle extends Bundle {}

@@ -1,0 +1,18 @@
+includes:
+    - vendor/phpstan/phpstan-symfony/extension.neon
+
+parameters:
+    level: 5
+    parallel:
+        maximumNumberOfProcesses: 0
+    bootstrapFiles:
+        - snapshot-test-app/vendor/autoload.php
+    paths:
+        - src/
+    symfony:
+        containerXmlPath: snapshot-test-app/var/cache/dev/App_KernelDevDebugContainer.xml
+    scanDirectories:
+        - snapshot-test-app/var/cache/dev/Symfony/Config
+    scanFiles:
+        - snapshot-test-app/vendor/symfony/dependency-injection/Loader/Configurator/ContainerConfigurator.php
+    tmpDir: ./.build/phpstan

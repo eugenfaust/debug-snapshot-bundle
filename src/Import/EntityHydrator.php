@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Evgenijfaustov\DebugSnapshotBundle\Import;
 
+use ArrayAccess;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping\ClassMetadata;
@@ -12,69 +13,65 @@ use ReflectionNamedType;
 use ReflectionType;
 use ReflectionUnionType;
 
-final class EntityHydrator
+final readonly class EntityHydrator
 {
-    private ScalarDenormalizer $denormalizer;
-    private ValueDenormalizer $valueDenormalizer;
-
-    public function __construct(ScalarDenormalizer $denormalizer, ValueDenormalizer $valueDenormalizer)
+    public function __construct(private ScalarDenormalizer $denormalizer, private ValueDenormalizer $valueDenormalizer)
     {
-        $this->denormalizer = $denormalizer;
-        $this->valueDenormalizer = $valueDenormalizer;
     }
 
-    public function hydrateScalars(object $entity, ClassMetadata $metadata, array $fields): void
+    public function hydrateScalars(object $entity, ClassMetadata $classMetadata, array $fields): void
     {
         foreach ($fields as $field => $value) {
-            if (!$metadata->hasField($field)) {
-                throw new InvalidArgumentException(sprintf('Field "%s" not found in "%s".', $field, $metadata->getName()));
+            if (!$classMetadata->hasField($field)) {
+                throw new InvalidArgumentException(sprintf('Field "%s" not found in "%s".', $field, $classMetadata->getName()));
             }
 
-            $mapping = $metadata->getFieldMapping($field);
+            $mapping = $classMetadata->getFieldMapping($field);
             $embeddedClass = $this->resolveEmbeddedClass($mapping);
             if ($embeddedClass !== null && ($value === null || is_scalar($value))) {
                 $embeddedValue = $this->valueDenormalizer->denormalize($embeddedClass, $value);
-                $metadata->setFieldValue($entity, $mapping['declaredField'], $embeddedValue);
+                $classMetadata->setFieldValue($entity, $mapping['declaredField'], $embeddedValue);
+
                 continue;
             }
 
-            $converted = $this->denormalizer->denormalize($metadata, (string) $field, $value);
-            $reflectionProperty = $metadata->getReflectionProperty($field);
+            $converted = $this->denormalizer->denormalize($classMetadata, (string) $field, $value);
+            $reflectionProperty = $classMetadata->getReflectionProperty($field);
             $targetClass = $this->resolveTargetClass($reflectionProperty?->getType());
             if ($targetClass !== null && ($converted === null || is_scalar($converted))) {
                 $converted = $this->valueDenormalizer->denormalize($targetClass, $converted);
             }
-            $metadata->setFieldValue($entity, $field, $converted);
+            $classMetadata->setFieldValue($entity, $field, $converted);
         }
     }
 
-    public function hydrateToOne(object $entity, ClassMetadata $metadata, string $field, object $target): void
+    public function hydrateToOne(object $entity, ClassMetadata $classMetadata, string $field, object $target): void
     {
-        if (!$metadata->hasAssociation($field)) {
-            throw new InvalidArgumentException(sprintf('Association "%s" not found in "%s".', $field, $metadata->getName()));
+        if (!$classMetadata->hasAssociation($field)) {
+            throw new InvalidArgumentException(sprintf('Association "%s" not found in "%s".', $field, $classMetadata->getName()));
         }
 
-        if (!$metadata->isSingleValuedAssociation($field)) {
-            throw new InvalidArgumentException(sprintf('Association "%s" in "%s" is not single-valued.', $field, $metadata->getName()));
+        if (!$classMetadata->isSingleValuedAssociation($field)) {
+            throw new InvalidArgumentException(sprintf('Association "%s" in "%s" is not single-valued.', $field, $classMetadata->getName()));
         }
 
-        $metadata->setFieldValue($entity, $field, $target);
+        $classMetadata->setFieldValue($entity, $field, $target);
     }
 
-    public function hydrateToMany(object $entity, ClassMetadata $metadata, string $field, array $targets): void
+    public function hydrateToMany(object $entity, ClassMetadata $classMetadata, string $field, array $targets): void
     {
-        if (!$metadata->hasAssociation($field)) {
-            throw new InvalidArgumentException(sprintf('Association "%s" not found in "%s".', $field, $metadata->getName()));
+        if (!$classMetadata->hasAssociation($field)) {
+            throw new InvalidArgumentException(sprintf('Association "%s" not found in "%s".', $field, $classMetadata->getName()));
         }
 
-        if (!$metadata->isCollectionValuedAssociation($field)) {
-            throw new InvalidArgumentException(sprintf('Association "%s" in "%s" is not collection-valued.', $field, $metadata->getName()));
+        if (!$classMetadata->isCollectionValuedAssociation($field)) {
+            throw new InvalidArgumentException(sprintf('Association "%s" in "%s" is not collection-valued.', $field, $classMetadata->getName()));
         }
 
-        $collection = $metadata->getFieldValue($entity, $field);
+        $collection = $classMetadata->getFieldValue($entity, $field);
         if (!$collection instanceof Collection) {
             $collection = new ArrayCollection();
-            $metadata->setFieldValue($entity, $field, $collection);
+            $classMetadata->setFieldValue($entity, $field, $collection);
         }
 
         $collection->clear();
@@ -83,18 +80,18 @@ final class EntityHydrator
         }
     }
 
-    private function resolveTargetClass(ReflectionType|null $type): string|null
+    private function resolveTargetClass(?ReflectionType $reflectionType): ?string
     {
-        if ($type instanceof ReflectionNamedType) {
-            if ($type->isBuiltin()) {
+        if ($reflectionType instanceof ReflectionNamedType) {
+            if ($reflectionType->isBuiltin()) {
                 return null;
             }
 
-            return $type->getName();
+            return $reflectionType->getName();
         }
 
-        if ($type instanceof ReflectionUnionType) {
-            foreach ($type->getTypes() as $namedType) {
+        if ($reflectionType instanceof ReflectionUnionType) {
+            foreach ($reflectionType->getTypes() as $namedType) {
                 if (!$namedType instanceof ReflectionNamedType) {
                     continue;
                 }
@@ -115,9 +112,9 @@ final class EntityHydrator
         return null;
     }
 
-    private function resolveEmbeddedClass(mixed $mapping): string|null
+    private function resolveEmbeddedClass(mixed $mapping): ?string
     {
-        if (!is_array($mapping) && !$mapping instanceof \ArrayAccess) {
+        if (!is_array($mapping) && !$mapping instanceof ArrayAccess) {
             return null;
         }
 

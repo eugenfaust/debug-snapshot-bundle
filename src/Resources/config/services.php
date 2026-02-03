@@ -4,20 +4,22 @@ declare(strict_types=1);
 
 use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
 
-return static function (ContainerConfigurator $configurator): void {
-    $services = $configurator->services()
+return static function (ContainerConfigurator $containerConfigurator): void {
+    $defaultsConfigurator = $containerConfigurator->services()
         ->defaults()
         ->autowire()
         ->autoconfigure()
         ->bind('$hydrateMap', '%debug_snapshot.hydrate%')
         ->bind('$httpEnabled', '%debug_snapshot.http.enabled%')
-        ->bind('$httpRole', '%debug_snapshot.http.role%');
+        ->bind('$httpRole', '%debug_snapshot.http.role%')
+    ;
 
-    $services->load('Evgenijfaustov\\DebugSnapshotBundle\\', '../../*')
+    $defaultsConfigurator->load('Evgenijfaustov\DebugSnapshotBundle\\', '../../*')
         ->exclude([
             '../../DependencyInjection',
             '../../Resources',
             '../../Tests',
             '../../Profile',
-        ]);
+        ])
+    ;
 };

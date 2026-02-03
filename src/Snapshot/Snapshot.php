@@ -4,17 +4,12 @@ declare(strict_types=1);
 
 namespace Evgenijfaustov\DebugSnapshotBundle\Snapshot;
 
-final class Snapshot
+final readonly class Snapshot
 {
-    public const FORMAT = 'debug-snapshot/1';
+    public const string FORMAT = 'debug-snapshot/1';
 
-    private EntityReference $root;
-    private array $entities;
-
-    public function __construct(EntityReference $root, array $entities)
+    public function __construct(private EntityReference $root, private array $entities)
     {
-        $this->root = $root;
-        $this->entities = $entities;
     }
 
     public function getRoot(): EntityReference

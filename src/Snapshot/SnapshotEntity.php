@@ -4,26 +4,10 @@ declare(strict_types=1);
 
 namespace Evgenijfaustov\DebugSnapshotBundle\Snapshot;
 
-final class SnapshotEntity
+final readonly class SnapshotEntity
 {
-    private string $class;
-    private string|int $id;
-    private array $fields;
-    private array $toOne;
-    private array $toMany;
-
-    public function __construct(
-        string $class,
-        string|int $id,
-        array $fields,
-        array $toOne,
-        array $toMany
-    ) {
-        $this->class = $class;
-        $this->id = $id;
-        $this->fields = $fields;
-        $this->toOne = $toOne;
-        $this->toMany = $toMany;
+    public function __construct(private string $class, private int|string $id, private array $fields, private array $toOne, private array $toMany)
+    {
     }
 
     public function getClass(): string
@@ -31,7 +15,7 @@ final class SnapshotEntity
         return $this->class;
     }
 
-    public function getId(): string|int
+    public function getId(): int|string
     {
         return $this->id;
     }

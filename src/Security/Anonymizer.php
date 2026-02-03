@@ -38,11 +38,11 @@ final class Anonymizer
                 $fields = [];
             }
 
-            foreach ($fieldsToMask as $fieldName) {
-                if (!array_key_exists($fieldName, $fields)) {
+            foreach ($fieldsToMask as $fieldToMask) {
+                if (!array_key_exists($fieldToMask, $fields)) {
                     continue;
                 }
-                $fields[$fieldName] = $this->maskValue($fields[$fieldName]);
+                $fields[$fieldToMask] = $this->maskValue($fields[$fieldToMask]);
             }
 
             $entity['fields'] = $fields;

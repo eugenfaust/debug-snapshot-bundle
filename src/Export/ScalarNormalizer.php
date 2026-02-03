@@ -38,6 +38,7 @@ final class ScalarNormalizer
             foreach ($value as $key => $item) {
                 $normalized[$key] = $this->normalize($item);
             }
+
             return $normalized;
         }
 

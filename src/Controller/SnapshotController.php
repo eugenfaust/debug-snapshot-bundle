@@ -7,36 +7,20 @@ namespace Evgenijfaustov\DebugSnapshotBundle\Controller;
 use Evgenijfaustov\DebugSnapshotBundle\Service\SnapshotExporter;
 use Evgenijfaustov\DebugSnapshotBundle\Service\SnapshotImporter;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\ResponseHeaderBag;
-use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Core\Authorization\AuthorizationCheckerInterface;
 
-final class SnapshotController
+final readonly class SnapshotController
 {
-    private SnapshotExporter $exporter;
-    private SnapshotImporter $importer;
-    private AuthorizationCheckerInterface $authorizationChecker;
-    private bool $httpEnabled;
-    private string $httpRole;
-
-    public function __construct(
-        SnapshotExporter $exporter,
-        SnapshotImporter $importer,
-        AuthorizationCheckerInterface $authorizationChecker,
-        bool $httpEnabled,
-        string $httpRole
-    ) {
-        $this->exporter = $exporter;
-        $this->importer = $importer;
-        $this->authorizationChecker = $authorizationChecker;
-        $this->httpEnabled = $httpEnabled;
-        $this->httpRole = $httpRole;
+    public function __construct(private SnapshotExporter $exporter, private SnapshotImporter $importer, private AuthorizationCheckerInterface $authorizationChecker, private bool $httpEnabled, private string $httpRole)
+    {
     }
 
     #[Route('/_debug/snapshot/export/{profile}/{id}', name: 'debug_snapshot_export', methods: ['POST'])]
@@ -47,11 +31,11 @@ final class SnapshotController
         $anonymize = filter_var($request->query->get('anonymize', '0'), FILTER_VALIDATE_BOOL);
         $archivePath = $this->exporter->export($profile, $id, sys_get_temp_dir(), $anonymize);
 
-        $response = new BinaryFileResponse($archivePath);
-        $response->setContentDisposition(ResponseHeaderBag::DISPOSITION_ATTACHMENT, basename($archivePath));
-        $response->deleteFileAfterSend(true);
+        $binaryFileResponse = new BinaryFileResponse($archivePath);
+        $binaryFileResponse->setContentDisposition(ResponseHeaderBag::DISPOSITION_ATTACHMENT, basename($archivePath));
+        $binaryFileResponse->deleteFileAfterSend(true);
 
-        return $response;
+        return $binaryFileResponse;
     }
 
     #[Route('/_debug/snapshot/import', name: 'debug_snapshot_import', methods: ['POST'])]

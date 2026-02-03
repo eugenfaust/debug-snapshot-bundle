@@ -4,15 +4,10 @@ declare(strict_types=1);
 
 namespace Evgenijfaustov\DebugSnapshotBundle\Snapshot;
 
-final class EntityReference
+final readonly class EntityReference
 {
-    private string $class;
-    private string|int $id;
-
-    public function __construct(string $class, string|int $id)
+    public function __construct(private string $class, private int|string $id)
     {
-        $this->class = $class;
-        $this->id = $id;
     }
 
     public function getClass(): string
@@ -20,7 +15,7 @@ final class EntityReference
         return $this->class;
     }
 
-    public function getId(): string|int
+    public function getId(): int|string
     {
         return $this->id;
     }

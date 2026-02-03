@@ -15,23 +15,14 @@ use InvalidArgumentException;
 use RuntimeException;
 use SplQueue;
 
-final class DoctrineGraphWalker
+final readonly class DoctrineGraphWalker
 {
-    private EntityManagerInterface $entityManager;
-    private DoctrineEntityExtractor $extractor;
-
-    public function __construct(EntityManagerInterface $entityManager, DoctrineEntityExtractor $extractor)
+    public function __construct(private EntityManagerInterface $entityManager, private DoctrineEntityExtractor $extractor)
     {
-        $this->entityManager = $entityManager;
-        $this->extractor = $extractor;
     }
 
-    public function walk(Profile $profile, string|int $rootId): Snapshot
+    public function walk(Profile $profile, int|string $rootId): Snapshot
     {
-        if (!is_string($rootId) && !is_int($rootId)) {
-            throw new InvalidArgumentException('Root identifier must be string or int.');
-        }
-
         $rootClass = $profile->getRootClass();
         $rootEntity = $this->findEntity($rootClass, $rootId);
 
@@ -45,12 +36,12 @@ final class DoctrineGraphWalker
         while (!$queue->isEmpty()) {
             [$entity, $depth] = $queue->dequeue();
 
-            $metadata = $this->entityManager->getClassMetadata(get_class($entity));
+            $metadata = $this->entityManager->getClassMetadata($entity::class);
             $class = $metadata->getName();
             $this->assertSingleIdentifier($metadata);
 
             $id = $this->getEntityId($entity, $metadata);
-            $key = $class . ':' . (string) $id;
+            $key = $class.':'.$id;
 
             if (isset($visited[$key])) {
                 continue;
@@ -61,7 +52,7 @@ final class DoctrineGraphWalker
             }
 
             $visited[$key] = true;
-            $nodes++;
+            ++$nodes;
 
             $relations = [
                 'toOne' => [],
@@ -85,33 +76,33 @@ final class DoctrineGraphWalker
             );
         }
 
-        $rootReference = new EntityReference($rootClass, $rootId);
+        $entityReference = new EntityReference($rootClass, $rootId);
 
-        return new Snapshot($rootReference, $entities);
+        return new Snapshot($entityReference, $entities);
     }
 
     private function collectRelations(
         object $entity,
-        ClassMetadata $metadata,
+        ClassMetadata $classMetadata,
         Profile $profile,
         SplQueue $queue,
         int $depth
     ): array {
         $include = $profile->getInclude();
-        $allowed = $include[$metadata->getName()] ?? [];
+        $allowed = $include[$classMetadata->getName()] ?? [];
 
         $toOne = [];
         $toMany = [];
 
         foreach ($allowed as $association) {
-            if (!$metadata->hasAssociation($association)) {
-                throw new InvalidArgumentException(sprintf('Association "%s" not found in "%s".', $association, $metadata->getName()));
+            if (!$classMetadata->hasAssociation($association)) {
+                throw new InvalidArgumentException(sprintf('Association "%s" not found in "%s".', $association, $classMetadata->getName()));
             }
 
-            $mapping = $metadata->getAssociationMapping($association);
-            $value = $metadata->getFieldValue($entity, $association);
+            $mapping = $classMetadata->getAssociationMapping($association);
+            $value = $classMetadata->getFieldValue($entity, $association);
 
-            if ($metadata->isSingleValuedAssociation($association)) {
+            if ($classMetadata->isSingleValuedAssociation($association)) {
                 if ($value === null) {
                     continue;
                 }
@@ -127,12 +118,13 @@ final class DoctrineGraphWalker
                 continue;
             }
 
-            if (!$metadata->isCollectionValuedAssociation($association)) {
-                throw new InvalidArgumentException(sprintf('Association "%s" in "%s" is not supported.', $association, $metadata->getName()));
+            if (!$classMetadata->isCollectionValuedAssociation($association)) {
+                throw new InvalidArgumentException(sprintf('Association "%s" in "%s" is not supported.', $association, $classMetadata->getName()));
             }
 
             if ($value === null) {
                 $toMany[$association] = [];
+
                 continue;
             }
 
@@ -141,7 +133,7 @@ final class DoctrineGraphWalker
             }
 
             if (!is_iterable($value)) {
-                throw new InvalidArgumentException(sprintf('Association "%s" in "%s" is not iterable.', $association, $metadata->getName()));
+                throw new InvalidArgumentException(sprintf('Association "%s" in "%s" is not iterable.', $association, $classMetadata->getName()));
             }
 
             $items = [];
@@ -150,7 +142,7 @@ final class DoctrineGraphWalker
                     continue;
                 }
 
-                $targetMetadata = $this->entityManager->getClassMetadata(get_class($item));
+                $targetMetadata = $this->entityManager->getClassMetadata($item::class);
                 $this->assertSingleIdentifier($targetMetadata);
                 $targetId = $this->getEntityId($item, $targetMetadata);
 
@@ -167,7 +159,7 @@ final class DoctrineGraphWalker
         ];
     }
 
-    private function findEntity(string $class, string|int $id): object
+    private function findEntity(string $class, int|string $id): object
     {
         $entity = $this->entityManager->find($class, $id);
 
@@ -178,12 +170,12 @@ final class DoctrineGraphWalker
         return $entity;
     }
 
-    private function getEntityId(object $entity, ClassMetadata $metadata): string|int
+    private function getEntityId(object $entity, ClassMetadata $classMetadata): int|string
     {
-        $values = $metadata->getIdentifierValues($entity);
+        $values = $classMetadata->getIdentifierValues($entity);
 
         if (count($values) !== 1) {
-            throw new RuntimeException(sprintf('Composite identifier is not supported for "%s".', $metadata->getName()));
+            throw new RuntimeException(sprintf('Composite identifier is not supported for "%s".', $classMetadata->getName()));
         }
 
         $id = array_values($values)[0];
@@ -196,13 +188,13 @@ final class DoctrineGraphWalker
             return (string) $id;
         }
 
-        throw new RuntimeException(sprintf('Unsupported identifier type for "%s".', $metadata->getName()));
+        throw new RuntimeException(sprintf('Unsupported identifier type for "%s".', $classMetadata->getName()));
     }
 
-    private function assertSingleIdentifier(ClassMetadata $metadata): void
+    private function assertSingleIdentifier(ClassMetadata $classMetadata): void
     {
-        if ($metadata->isIdentifierComposite) {
-            throw new RuntimeException(sprintf('Composite identifier is not supported for "%s".', $metadata->getName()));
+        if ($classMetadata->isIdentifierComposite) {
+            throw new RuntimeException(sprintf('Composite identifier is not supported for "%s".', $classMetadata->getName()));
         }
     }
 }

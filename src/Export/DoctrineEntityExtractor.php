@@ -6,26 +6,23 @@ namespace Evgenijfaustov\DebugSnapshotBundle\Export;
 
 use Doctrine\ORM\Mapping\ClassMetadata;
 
-final class DoctrineEntityExtractor
+final readonly class DoctrineEntityExtractor
 {
-    private ScalarNormalizer $normalizer;
-
-    public function __construct(ScalarNormalizer $normalizer)
+    public function __construct(private ScalarNormalizer $normalizer)
     {
-        $this->normalizer = $normalizer;
     }
 
-    public function extractFields(object $entity, ClassMetadata $metadata): array
+    public function extractFields(object $entity, ClassMetadata $classMetadata): array
     {
         $fields = [];
-        $identifierFields = $metadata->getIdentifierFieldNames();
+        $identifierFields = $classMetadata->getIdentifierFieldNames();
 
-        foreach ($metadata->getFieldNames() as $field) {
+        foreach ($classMetadata->getFieldNames() as $field) {
             if (in_array($field, $identifierFields, true)) {
                 continue;
             }
 
-            $value = $metadata->getFieldValue($entity, $field);
+            $value = $classMetadata->getFieldValue($entity, $field);
             $fields[$field] = $this->normalizer->normalize($value);
         }
 

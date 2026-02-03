@@ -9,15 +9,10 @@ use Doctrine\ORM\Mapping\ClassMetadata;
 use Evgenijfaustov\DebugSnapshotBundle\Snapshot\Snapshot;
 use RuntimeException;
 
-final class DoctrineSnapshotImporter
+final readonly class DoctrineSnapshotImporter
 {
-    private EntityManagerInterface $entityManager;
-    private EntityHydrator $hydrator;
-
-    public function __construct(EntityManagerInterface $entityManager, EntityHydrator $hydrator)
+    public function __construct(private EntityManagerInterface $entityManager, private EntityHydrator $hydrator)
     {
-        $this->entityManager = $entityManager;
-        $this->hydrator = $hydrator;
     }
 
     public function import(array $snapshotData): void
@@ -54,7 +49,6 @@ final class DoctrineSnapshotImporter
             $this->hydrator->hydrateScalars($entity, $metadata, $fields);
 
             $map[$class][(string) $id] = $entity;
-
         }
 
         $counter = 0;
@@ -122,7 +116,7 @@ final class DoctrineSnapshotImporter
                 $this->hydrator->hydrateToMany($entity, $metadata, (string) $field, $targets);
             }
 
-            $counter++;
+            ++$counter;
             if ($counter % 200 === 0) {
                 $this->entityManager->flush();
             }
@@ -131,20 +125,20 @@ final class DoctrineSnapshotImporter
         $this->entityManager->flush();
     }
 
-    private function setIdentifier(object $entity, ClassMetadata $metadata, string|int $id): void
+    private function setIdentifier(object $entity, ClassMetadata $classMetadata, int|string $id): void
     {
-        $identifier = $metadata->getIdentifierFieldNames();
+        $identifier = $classMetadata->getIdentifierFieldNames();
         if (count($identifier) !== 1) {
             throw new RuntimeException('Composite identifier is not supported.');
         }
 
-        $this->hydrator->hydrateScalars($entity, $metadata, [$identifier[0] => $id]);
+        $this->hydrator->hydrateScalars($entity, $classMetadata, [$identifier[0] => $id]);
     }
 
-    private function assertSingleIdentifier(ClassMetadata $metadata): void
+    private function assertSingleIdentifier(ClassMetadata $classMetadata): void
     {
-        if ($metadata->isIdentifierComposite) {
-            throw new RuntimeException(sprintf('Composite identifier is not supported for "%s".', $metadata->getName()));
+        if ($classMetadata->isIdentifierComposite) {
+            throw new RuntimeException(sprintf('Composite identifier is not supported for "%s".', $classMetadata->getName()));
         }
     }
 }

@@ -6,11 +6,11 @@ namespace Evgenijfaustov\DebugSnapshotBundle\DependencyInjection;
 
 use Evgenijfaustov\DebugSnapshotBundle\Profile\Profile;
 use Evgenijfaustov\DebugSnapshotBundle\Profile\ProfileRegistry;
+use Symfony\Component\Config\FileLocator;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Definition;
 use Symfony\Component\DependencyInjection\Extension\Extension;
 use Symfony\Component\DependencyInjection\Loader\PhpFileLoader;
-use Symfony\Component\Config\FileLocator;
 
 final class DebugSnapshotExtension extends Extension
 {
@@ -38,7 +38,7 @@ final class DebugSnapshotExtension extends Extension
 
         $container->setDefinition(ProfileRegistry::class, new Definition(ProfileRegistry::class, [$profiles]));
 
-        $loader = new PhpFileLoader($container, new FileLocator(__DIR__ . '/../Resources/config'));
-        $loader->load('services.php');
+        $phpFileLoader = new PhpFileLoader($container, new FileLocator(__DIR__.'/../Resources/config'));
+        $phpFileLoader->load('services.php');
     }
 }

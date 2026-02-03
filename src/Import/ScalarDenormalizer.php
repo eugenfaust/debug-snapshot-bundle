@@ -8,38 +8,34 @@ use BackedEnum;
 use Doctrine\DBAL\Types\Type;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Mapping\ClassMetadata;
-use UnitEnum;
 
-final class ScalarDenormalizer
+final readonly class ScalarDenormalizer
 {
-    private EntityManagerInterface $entityManager;
-
-    public function __construct(EntityManagerInterface $entityManager)
+    public function __construct(private EntityManagerInterface $entityManager)
     {
-        $this->entityManager = $entityManager;
     }
 
-    public function denormalize(ClassMetadata $metadata, string $field, mixed $value): mixed
+    public function denormalize(ClassMetadata $classMetadata, string $field, mixed $value): mixed
     {
         if ($value === null) {
             return null;
         }
 
-        $mapping = $metadata->getFieldMapping($field);
+        $fieldMapping = $classMetadata->getFieldMapping($field);
 
-        if (isset($mapping['enumType']) && is_string($mapping['enumType']) && enum_exists($mapping['enumType'])) {
-            $enumClass = $mapping['enumType'];
+        if (isset($fieldMapping['enumType']) && is_string($fieldMapping['enumType']) && enum_exists($fieldMapping['enumType'])) {
+            $enumClass = $fieldMapping['enumType'];
             if (is_subclass_of($enumClass, BackedEnum::class)) {
                 return $enumClass::from($value);
             }
-            if (is_subclass_of($enumClass, UnitEnum::class)) {
-                return constant($enumClass . '::' . $value);
-            }
+
+            return constant($enumClass.'::'.$value);
         }
 
-        $typeName = $metadata->getTypeOfField($field);
+        $typeName = $classMetadata->getTypeOfField($field);
         if (is_string($typeName) && Type::hasType($typeName)) {
             $type = Type::getType($typeName);
+
             return $type->convertToPHPValue($value, $this->entityManager->getConnection()->getDatabasePlatform());
         }
 

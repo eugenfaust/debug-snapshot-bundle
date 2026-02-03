@@ -18,14 +18,10 @@ use Symfony\Component\Console\Output\OutputInterface;
 )]
 final class ExportSnapshotCommand extends Command
 {
-    private SnapshotExporter $exporter;
-
     public function __construct(
-        SnapshotExporter $exporter
+        private readonly SnapshotExporter $exporter
     ) {
         parent::__construct();
-
-        $this->exporter = $exporter;
     }
 
     protected function configure(): void
@@ -34,7 +30,8 @@ final class ExportSnapshotCommand extends Command
             ->addArgument('profile', InputArgument::REQUIRED, 'Profile name')
             ->addArgument('id', InputArgument::REQUIRED, 'Root entity id')
             ->addOption('out', null, InputOption::VALUE_REQUIRED, 'Output directory', 'var/snapshots')
-            ->addOption('anonymize', null, InputOption::VALUE_REQUIRED, 'Mask PII fields', '0');
+            ->addOption('anonymize', null, InputOption::VALUE_REQUIRED, 'Mask PII fields', '0')
+        ;
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int

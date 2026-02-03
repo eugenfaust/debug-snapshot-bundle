@@ -11,16 +11,15 @@ use InvalidArgumentException;
 use ReflectionClass;
 use ReflectionFunctionAbstract;
 use ReflectionMethod;
+use ReflectionNamedType;
 
 final class ValueDenormalizer
 {
-    /** @var array<string, array{factory: string}> */
-    private array $hydrateMap;
-
-    /** @param array<string, array{factory: string}> $hydrateMap */
-    public function __construct(array $hydrateMap = [])
+    /**
+     * @param array<string, array{factory: string}> $hydrateMap
+     */
+    public function __construct(private array $hydrateMap = [])
     {
-        $this->hydrateMap = $hydrateMap;
     }
 
     public function denormalize(string $targetClass, mixed $value): mixed
@@ -76,9 +75,9 @@ final class ValueDenormalizer
             ));
         }
 
-        $reflection = new ReflectionMethod($class, $method);
+        $reflectionMethod = new ReflectionMethod($class, $method);
 
-        return $class::$method($this->coerceValueForMethod($reflection, $value));
+        return $class::$method($this->coerceValueForMethod($reflectionMethod, $value));
     }
 
     private function hasPublicStatic(string $class, string $method): bool
@@ -87,15 +86,15 @@ final class ValueDenormalizer
             return false;
         }
 
-        $reflection = new ReflectionMethod($class, $method);
+        $reflectionMethod = new ReflectionMethod($class, $method);
 
-        return $reflection->isPublic() && $reflection->isStatic();
+        return $reflectionMethod->isPublic() && $reflectionMethod->isStatic();
     }
 
     private function hasPublicConstructor(string $class): bool
     {
-        $reflection = new ReflectionClass($class);
-        $constructor = $reflection->getConstructor();
+        $reflectionClass = new ReflectionClass($class);
+        $constructor = $reflectionClass->getConstructor();
 
         if ($constructor === null || !$constructor->isPublic()) {
             return false;
@@ -106,13 +105,13 @@ final class ValueDenormalizer
         return count($parameters) === 1;
     }
 
-    private function coerceValueForMethod(?ReflectionFunctionAbstract $method, mixed $value): mixed
+    private function coerceValueForMethod(?ReflectionFunctionAbstract $reflectionFunctionAbstract, mixed $value): mixed
     {
-        if ($method === null || $value === null) {
+        if (!$reflectionFunctionAbstract instanceof \ReflectionFunctionAbstract || $value === null) {
             return $value;
         }
 
-        $parameters = $method->getParameters();
+        $parameters = $reflectionFunctionAbstract->getParameters();
 
         if (count($parameters) !== 1) {
             return $value;
@@ -120,7 +119,7 @@ final class ValueDenormalizer
 
         $type = $parameters[0]->getType();
 
-        if ($type === null || !$type instanceof \ReflectionNamedType) {
+        if ($type === null || !$type instanceof ReflectionNamedType) {
             return $value;
         }
 

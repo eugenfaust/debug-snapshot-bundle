@@ -16,14 +16,14 @@ final class SnapshotReader
             throw new RuntimeException('Snapshot archive not found.');
         }
 
-        $zip = new ZipArchive();
-        if ($zip->open($archivePath) !== true) {
+        $zipArchive = new ZipArchive();
+        if ($zipArchive->open($archivePath) !== true) {
             throw new RuntimeException('Failed to open snapshot archive.');
         }
 
-        $metaRaw = $zip->getFromName('meta.json');
-        $snapshotRaw = $zip->getFromName('snapshot.json');
-        $zip->close();
+        $metaRaw = $zipArchive->getFromName('meta.json');
+        $snapshotRaw = $zipArchive->getFromName('snapshot.json');
+        $zipArchive->close();
 
         if ($metaRaw === false || $snapshotRaw === false) {
             throw new RuntimeException('Snapshot archive is missing required files.');

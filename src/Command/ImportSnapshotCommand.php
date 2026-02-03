@@ -18,21 +18,18 @@ use Symfony\Component\Console\Output\OutputInterface;
 )]
 final class ImportSnapshotCommand extends Command
 {
-    private SnapshotImporter $importer;
-
     public function __construct(
-        SnapshotImporter $importer
+        private readonly SnapshotImporter $importer
     ) {
         parent::__construct();
-
-        $this->importer = $importer;
     }
 
     protected function configure(): void
     {
         $this
             ->addArgument('archive', InputArgument::REQUIRED, 'Path to snapshot zip')
-            ->addOption('anonymize', null, InputOption::VALUE_REQUIRED, 'Mask PII fields', '0');
+            ->addOption('anonymize', null, InputOption::VALUE_REQUIRED, 'Mask PII fields', '0')
+        ;
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
