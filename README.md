@@ -23,6 +23,9 @@ Evgenijfaustov\DebugSnapshotBundle\DebugSnapshotBundle::class => ['all' => true]
 ```yaml
 debug_snapshot:
   enabled: true
+  http:
+    enabled: false
+    role: ROLE_DEBUG_SNAPSHOT
   profiles:
     order:
       root_class: App\Entity\Order
@@ -52,6 +55,36 @@ php bin/console debug:snapshot:export order <ORDER_ID> --out=var/snapshots --ano
 
 ```bash
 php bin/console debug:snapshot:import var/snapshots/<FILE>.zip
+```
+
+## HTTP endpoints
+
+Enable routes and role-based access in your app:
+
+```yaml
+# config/routes/debug_snapshot.yaml
+debug_snapshot:
+  resource: '@DebugSnapshotBundle/Resources/config/routes.php'
+```
+
+```yaml
+# config/packages/debug_snapshot.yaml
+debug_snapshot:
+  http:
+    enabled: true
+    role: ROLE_DEBUG_SNAPSHOT
+```
+
+Export (returns zip):
+
+```bash
+curl -X POST "https://example.test/_debug/snapshot/export/order/<ORDER_ID>?anonymize=1" -o snapshot.zip
+```
+
+Import:
+
+```bash
+curl -X POST "https://example.test/_debug/snapshot/import?anonymize=1" -F "snapshot=@snapshot.zip"
 ```
 
 ## Snapshot format (v1)

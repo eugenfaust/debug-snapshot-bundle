@@ -4,11 +4,7 @@ declare(strict_types=1);
 
 namespace Evgenijfaustov\DebugSnapshotBundle\Command;
 
-use Evgenijfaustov\DebugSnapshotBundle\IO\SnapshotReader;
-use Evgenijfaustov\DebugSnapshotBundle\Import\DoctrineSnapshotImporter;
-use Evgenijfaustov\DebugSnapshotBundle\Profile\ProfileRegistry;
-use Evgenijfaustov\DebugSnapshotBundle\Security\Anonymizer;
-use RuntimeException;
+use Evgenijfaustov\DebugSnapshotBundle\Service\SnapshotImporter;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
@@ -22,23 +18,14 @@ use Symfony\Component\Console\Output\OutputInterface;
 )]
 final class ImportSnapshotCommand extends Command
 {
-    private SnapshotReader $reader;
-    private DoctrineSnapshotImporter $importer;
-    private ProfileRegistry $profiles;
-    private Anonymizer $anonymizer;
+    private SnapshotImporter $importer;
 
     public function __construct(
-        SnapshotReader $reader,
-        DoctrineSnapshotImporter $importer,
-        ProfileRegistry $profiles,
-        Anonymizer $anonymizer
+        SnapshotImporter $importer
     ) {
         parent::__construct();
 
-        $this->reader = $reader;
         $this->importer = $importer;
-        $this->profiles = $profiles;
-        $this->anonymizer = $anonymizer;
     }
 
     protected function configure(): void
@@ -53,20 +40,7 @@ final class ImportSnapshotCommand extends Command
         $archive = (string) $input->getArgument('archive');
         $anonymize = filter_var($input->getOption('anonymize'), FILTER_VALIDATE_BOOL);
 
-        $payload = $this->reader->read($archive);
-        $snapshot = $payload['snapshot'];
-
-        if ($anonymize) {
-            $profileName = $payload['meta']['profile'] ?? null;
-            if (!is_string($profileName)) {
-                throw new RuntimeException('Snapshot profile is missing.');
-            }
-
-            $profile = $this->profiles->get($profileName);
-            $snapshot = $this->anonymizer->anonymizeSnapshotArray($snapshot, $profile);
-        }
-
-        $this->importer->import($snapshot);
+        $this->importer->import($archive, $anonymize);
 
         $output->writeln('OK');
 

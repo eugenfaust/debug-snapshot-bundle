@@ -21,6 +21,8 @@ final class DebugSnapshotExtension extends Extension
 
         $container->setParameter('debug_snapshot.enabled', $config['enabled']);
         $container->setParameter('debug_snapshot.hydrate', $config['hydrate'] ?? []);
+        $container->setParameter('debug_snapshot.http.enabled', $config['http']['enabled']);
+        $container->setParameter('debug_snapshot.http.role', $config['http']['role']);
 
         $profiles = [];
         foreach ($config['profiles'] as $name => $profileConfig) {
