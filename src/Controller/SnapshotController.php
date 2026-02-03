@@ -6,6 +6,7 @@ namespace Evgenijfaustov\DebugSnapshotBundle\Controller;
 
 use Evgenijfaustov\DebugSnapshotBundle\Service\SnapshotExporter;
 use Evgenijfaustov\DebugSnapshotBundle\Service\SnapshotImporter;
+use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -17,11 +18,9 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Core\Authorization\AuthorizationCheckerInterface;
 
-final readonly class SnapshotController
+final class SnapshotController extends AbstractController
 {
-    public function __construct(private SnapshotExporter $exporter, private SnapshotImporter $importer, private AuthorizationCheckerInterface $authorizationChecker, private bool $httpEnabled, private string $httpRole)
-    {
-    }
+    public function __construct(private SnapshotExporter $exporter, private SnapshotImporter $importer, private AuthorizationCheckerInterface $authorizationChecker, private bool $httpEnabled, private string $httpRole) {}
 
     #[Route('/_debug/snapshot/export/{profile}/{id}', name: 'debug_snapshot_export', methods: ['POST'])]
     public function export(string $profile, string $id, Request $request): BinaryFileResponse
