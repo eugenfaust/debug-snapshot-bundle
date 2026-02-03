@@ -72,6 +72,8 @@ final class DoctrineGraphWalker
                 $relations = $this->collectRelations($entity, $metadata, $profile, $queue, $depth);
             }
 
+            // Ensure lazy-loaded entities are initialized before reading scalar fields.
+            $this->entityManager->initializeObject($entity);
             $fields = $this->extractor->extractFields($entity, $metadata);
 
             $entities[] = new SnapshotEntity(
